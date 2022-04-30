@@ -350,7 +350,7 @@ public class CEFClient {
     }*/
         //private String Header;
         public String getHeader() {
-            String formattedDate = new SimpleDateFormat("y-M-d H:m:s.S").format(new Date()); //parse("2017-9-11 13:1:28.9");
+            String formattedDate = new SimpleDateFormat("MMM dd HH:mm:ss"/*"y-M-d H:m:s.S"*/).format(new Date());
             //String formattedDate = DateTime.toString(); //Now.ToString("MMM dd HH:mm:ss", CultureInfo.CreateSpecificCulture("en-GB"));
 
             return String.format("%s %s", formattedDate, _host);
