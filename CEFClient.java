@@ -2,10 +2,14 @@ import java.util.List;
 import com.cloudbees.syslog.Facility;
 import com.cloudbees.syslog.MessageFormat;
 import com.cloudbees.syslog.Severity;
+import com.cloudbees.syslog.SyslogMessage;
 import com.cloudbees.syslog.sender.UdpSyslogMessageSender;
+import java.io.CharArrayWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 
 /*
  =============================================================================
@@ -68,16 +72,16 @@ public class CEFClient {
     //private IPHostEntry _ipHostInfo;
     //private IPAddress _ipAddress;
     //private IPEndPoint _ipLocalEndPoint;
-    private UdpSyslogMessageSender messageSender;
+    //private UdpSyslogMessageSender messageSender;
     //private String _sysLogServerIp = null;
     private int _port = 2000;
-    private String _vendor;
-    private String _product;
+    //private String _vendor;
+    //private String _product;
 
     public CEFClient(String Vendor, String Product) {
-        _vendor = Vendor;
-        _product = Product;
-        messageSender = new UdpSyslogMessageSender();
+        //_vendor = Vendor;
+        //_product = Product;
+        //messageSender = new UdpSyslogMessageSender();
         //_ipHostInfo = //Dns.GetHostEntry(Dns.GetHostName());
         //_ipAddress = _ipHostInfo.AddressList[0];
         //_ipLocalEndPoint = new IPEndPoint(_ipAddress, 0); 
@@ -350,7 +354,7 @@ public class CEFClient {
     }*/
         //private String Header;
         public String getHeader() {
-            String formattedDate = new SimpleDateFormat("MMM dd HH:mm:ss"/*"y-M-d H:m:s.S"*/).format(new Date());
+            String formattedDate = new SimpleDateFormat("MMM dd HH:mm:ss"/*"y-M-d H:m:s.S"*/, Locale.US).format(new Date()); //parse("2017-9-11 13:1:28.9");
             //String formattedDate = DateTime.toString(); //Now.ToString("MMM dd HH:mm:ss", CultureInfo.CreateSpecificCulture("en-GB"));
 
             return String.format("%s %s", formattedDate, _host);
@@ -415,10 +419,10 @@ public class CEFClient {
 
     public static class CEFField {
 
-        private String _id;
-        private Field _field;
-        private String _vendor;
-        private String _product;
+        private final String _id;
+        private final Field _field;
+        private final String _vendor;
+        private final String _product;
 
         public CEFField(String Vendor, String Product, int Id, Field Field) {
             _vendor = Vendor;
@@ -458,19 +462,33 @@ public class CEFClient {
 // syslog udp usually uses port 514 as per https://tools.ietf.org/html/rfc3164#page-5
         messageSender.setSyslogServerPort(514);
         messageSender.setMessageFormat(MessageFormat.RFC_3164); // optional, default is RFC 3164
+        SyslogMessage sm = new SyslogMessage();
+        sm.setAppName("appName" + "CEF:0|");
+        sm.setFacility(Facility.MAIL);
+        sm.setHostname("hostname");
+        sm.setMsg(new CharArrayWriter().append("msg"));
+        sm.setMsgId("msgId");
+        sm.setProcId("procId");
+        sm.setSeverity(Severity.ALERT);
+        sm.setTimestamp(new Date());
+        System.out.println(sm.toSyslogMessage(MessageFormat.RFC_3164).replace("CEF:0|: ", "CEF:0|"));
 
-// send a Syslog message
-//messageSender.sendMessage("This is a test message");        
+        try {
+            // send a Syslog message
+            //messageSender.sendMessage("This is a test message");
+            messageSender.sendMessage(sm);
+        } catch (IOException ex) {
+            //Logger.getLogger(CEFClient.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
         CEFClient c = new CEFClient("YourName", "YourProduct");
         c._port = 11;
         c.SysLogServerIp = "1.1.1.1";
 
         ArrayList<CEFClient.Field> fields = new ArrayList<>();
 
-        String user = "DonaldDuck";
-        String message = "tPerson";
-        String action = "insert";
-
+        //String user = "DonaldDuck";
+        //String message = "tPerson";
+        //String action = "insert";
         fields.add(new CEFClient.Field("Id", "1"));
         fields.add(new CEFClient.Field("SurName", "Smith"));
         fields.add(new CEFClient.Field("Name", "John"));
@@ -493,7 +511,9 @@ public class CEFClient {
             cefFields.add(new CEFClient.CEFField("ww", "eee", i, fields.get(i)));
         }
         cefParser = new CEFClient.CEFParser("version", "host", "vendor", "product", "signatureId", "text", 0, "username", "sourceIp", cefFields);
+        cefParser._severity = Level.Alert.levelCode;
         String msg = cefParser.getCEFMessage();
         System.out.println(msg);
+        System.out.println(cefParser.getMessage());
     }
 }
